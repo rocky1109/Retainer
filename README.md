@@ -27,7 +27,11 @@ In the project directory there's **settings.json**, which has configuration para
                    Example: *["NotStarted", "ProvisionBegin", "ProvisionDetected", "InstallBegin", "InstallCompleted", "ProvisionCompleted"]* <br />
                    For every object (upon **POST** request) it will automatically assign the first state from the list, <br />
                    and upon incrementing the state (from API) it will move the state to next state sequentially from the list.
-* **NO_OF_STATES**: (int) Integer number, which assigns the no. of states for the object scope. 
+* **NO_OF_STATES**: (int) Integer number, which assigns the no. of states for the object scope.
+* **ERRORS**: (optional, list) List of errors. Objects can be updated to any of the error state specified in settings. <br />
+                   Default will empty list, *[]*. <br />
+                   Such that object will not be able to assign to any error state.
+
 
 <br />
 
@@ -55,6 +59,8 @@ To create and save the object into database first you have to make the **post** 
     "name": "Office2k16",
     "state": "NotStarted",
     "updated_at": null,
+    "error": null,
+    "error_log": "",
     "uri": "http://127.0.0.1:8080/api/v1.0/apps/1"
   }
 }
@@ -73,6 +79,8 @@ To fetch the state for all the objects one will have to use **get** request, whi
       "name": "Office2k16",
       "state": "NotStarted",
       "updated_at": null,
+      "error": null,
+      "error_log": "",
       "uri": "http://127.0.0.1:8080/api/v1.0/apps/1"
     },
     {
@@ -80,6 +88,8 @@ To fetch the state for all the objects one will have to use **get** request, whi
       "name": "TeamViewer",
       "state": "NotStarted",
       "updated_at": null,
+      "error": null,
+      "error_log": "",
       "uri": "http://127.0.0.1:8080/api/v1.0/apps/2"
     },
     {
@@ -87,6 +97,8 @@ To fetch the state for all the objects one will have to use **get** request, whi
       "name": "Visio2k13",
       "state": "NotStarted",
       "updated_at": null,
+      "error": null,
+      "error_log": "",
       "uri": "http://127.0.0.1:8080/api/v1.0/apps/3"
     }
   ]
@@ -105,6 +117,8 @@ This is the **get** request which is made to *uri* of the returned object, which
     "name": "Office2k16",
     "state": "ProvisionBegin",
     "updated_at": "Thu, 01 Jun 2017 16:00:31 GMT",
+    "error": null,
+    "error_log": "",
     "uri": "http://127.0.0.1:8080/api/v1.0/apps/1"
   }
 }
@@ -129,6 +143,8 @@ This is a **get** request, which gets the object(s) associated with name value o
       "name": "TeamViewer",
       "state": "NotStarted",
       "updated_at": null,
+      "error": null,
+      "error_log": "",
       "uri": "http://localhost:8080/api/v1.0/apps/2"
     }
   ]
@@ -146,10 +162,32 @@ This is a **get** request, which gets the object associated with id value of the
     "name": "Visio2k13",
     "state": "NotStarted",
     "updated_at": null,
+    "error": null,
+    "error_log": "",
     "uri": "http://localhost:8080/api/v1.0/apps/3"
   }
 }
 ```
+
+* POST **ERROR** request: <br />
+This is **post** request, which changes the state of object to specified error state and the actual **state** parameter is changed to null.
+Takes to parameters: *error* (An error from list of **ERRORS**), and optional *error_log* (string specifying any error details)
+```
+>> cURL -i -H "Content-Type: application/json" -X POST -d '{"error":"ProvisionFailed", "error_log":"Disk was full"}' http://localhost:8080/api/v1.0/apps/1/error
+
+{
+  "app": {
+    "created_at": "Thu, 01 Jun 2017 15:45:24 GMT",
+    "name": "Office2k16",
+    "state": null,
+    "updated_at": "Thu, 01 Jun 2017 16:00:31 GMT",
+    "error": "ProvisionFailed",
+    "error_log": "Disk was full",
+    "uri": "http://127.0.0.1:8080/api/v1.0/apps/1"
+  }
+}
+```
+**NOTE**: Subsequently any calls (apart from **GET** & **DELETE** request) made to this object, will not be allowed made.
 
 <br /> <br />
 Similary, **PUT** and **DELETE** requests are made over the WebService.

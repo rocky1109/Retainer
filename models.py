@@ -10,7 +10,7 @@ class App(Base):
     name = Column(String(50))
     state = Column(Integer)
     error = Column(String, default='')
-    error_log = Column(String(500))
+    error_log = Column(String(500), default='')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -28,6 +28,7 @@ class App(Base):
             'name': self.name,
             'state': self.state,
             'error': self.error,
+            'error_log': self.error_log,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
