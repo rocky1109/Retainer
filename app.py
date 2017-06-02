@@ -15,11 +15,23 @@ Either "NO_OF_STATES" or "STATES" should be configured in settings.json
         settings["NO_OF_STATES"] = len(settings["STATES"])
     elif not settings.has_key("STATES"):
         settings["STATES"] = range(settings["NO_OF_STATES"])
+    elif settings.has_key("STATES") and settings.has_key("NO_OF_STATES"):
+        settings["NO_OF_STATES"] = len(settings["STATES"])
 
     if not settings.has_key("SQL_DB_PATH"):
         settings["SQL_DB_PATH"] = "sqlite:///apps.sqlite3"
 
+    if not settings.has_key("PORT"):
+        settings["PORT"] = 5000
 
+    if not settings.has_key("DEBUG"):
+        settings["DEBUG"] = False
+
+    if not settings.has_key("ERRORS"):
+        settings["ERRORS"] = list()
+
+
+from functools import wraps
 from flask import Flask, jsonify, request, make_response, url_for
 
 from database import db_session, init_db
@@ -36,13 +48,32 @@ init_db()
 STATES_INDEX = range(settings["NO_OF_STATES"])
 
 
+def cannot_update_after_error(function):
+    @wraps(function)
+    def func(app_id, *args, **kwargs):
+        app = App.query.filter(App.id == app_id).first()
+        if app:
+            if app.error:
+                return jsonify({
+                    'result': False,
+                    'reason': "State of object is already set to '{0}' error, hence can't make new changes.".format(app.error)
+                }), 404
+        return function(app_id, *args, **kwargs)
+    return func
+
+
 def make_public_app(app):
     new_app = {}
     for field in app:
         if field == 'id':
             new_app['uri'] = url_for('get_app', app_id=app['id'], _external=True)
         elif settings["STATES"] and field == 'state':
-            new_app['state'] = settings["STATES"][app['state']]
+            try:
+                new_app['state'] = settings["STATES"][app['state']]
+            except:
+                new_app['state'] = None
+        elif field == 'error' and app['error'] == '':
+            new_app['error'] = None
         else:
             new_app[field] = app[field]
     return new_app
@@ -90,6 +121,7 @@ def create_app():
 
 
 @application.route('/api/v1.0/apps/<int:app_id>', methods=['PUT'])
+@cannot_update_after_error
 def update_app(app_id):
     app = App.query.filter(App.id == app_id).first()
     if not app:
@@ -116,6 +148,7 @@ def update_app(app_id):
 
 
 @application.route('/api/v1.0/apps/<int:app_id>/incr', methods=['GET'])
+@cannot_update_after_error
 def increment_state(app_id):
     app = App.query.filter(App.id == app_id).first()
     if not app:
@@ -130,6 +163,33 @@ def increment_state(app_id):
             'result': False,
             'reason': "Reached to maximum state value."
         }), 404
+
+    db_session.commit()
+    return jsonify({'app': make_public_app(app.serialize)})
+
+
+@application.route('/api/v1.0/apps/<int:app_id>/error', methods=['POST'])
+@cannot_update_after_error
+def error_state(app_id):
+    app = App.query.filter(App.id == app_id).first()
+    if not app:
+        return jsonify({
+            'result': False,
+            'reason': "App with id {0} not found.".format(app_id)
+        }), 404
+
+    error_type = request.json.get("error")
+    if error_type not in settings['ERRORS']:
+        return jsonify({
+            'result': False,
+            'reason': "Error type '{0}' is not defined.".format(error_type)
+        }), 404
+
+    error_log = request.json.get('error_log', '')
+
+    app.state = None
+    app.error = error_type
+    app.error_log = error_log
 
     db_session.commit()
     return jsonify({'app': make_public_app(app.serialize)})

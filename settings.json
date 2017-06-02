@@ -1,6 +1,7 @@
 {
   "SQL_DB_PATH": "sqlite:///apps.sqlite3",
   "STATES": ["NotStarted", "ProvisionBegin", "ProvisionDetected", "InstallBegin", "InstallCompleted", "ProvisionCompleted"],
+  "ERRORS": ["ProvisionFailed"],
   "DEBUG": false,
   "PORT": 8080
 }

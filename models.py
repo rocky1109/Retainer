@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from database import Base
 
@@ -9,6 +9,8 @@ class App(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
     state = Column(Integer)
+    error = Column(String, default='')
+    error_log = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -25,6 +27,7 @@ class App(Base):
             'id': self.id,
             'name': self.name,
             'state': self.state,
+            'error': self.error,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
